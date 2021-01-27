@@ -122,7 +122,7 @@ app$callback(
     #  geom_line()
     # fig_list <- list(happiness_plot,features_plot)
     plot_out <- ggplotly(happiness_plot) %>% layout(dragmode = 'select')
-    return(plot_out)
+    return(list(plot_out))
   }
 )
 
