@@ -3,17 +3,17 @@ library(dashCoreComponents)
 library(dashHtmlComponents)
 library(dashBootstrapComponents)
 library(tidyverse)
-library(plotly) 
+library(plotly)
 
 
 app <- Dash$new(external_stylesheets = dbcThemes$BOOTSTRAP)
 
 #********************************* Define constants *******************************************
 
-summary_df <- read.csv("summary_df.csv") %>%
+summary_df <- read.csv("data/processed/summary_df.csv") %>%
   arrange(country)
 
-feature_dict = tibble(
+feature_dict <- tibble(
   "GDP Per Capita" = "gdp_per_capita",
   "Family" = "family",
   "Life Expectancy" = "health_life_expectancy",
@@ -21,10 +21,15 @@ feature_dict = tibble(
   "Corruption" = "perceptions_of_corruption",
   "Generosity" = "generosity",
   "Dystopia baseline + residual" = "dystopia_residual"
-) 
+)
 
 year_range <- summary_df$year %>% unique()
-year_range <- setNames(as.list(as.character(year_range)),as.integer(year_range))
+year_range <- setNames(as.list(as.character(year_range)), as.integer(year_range))
+
+intiliaztion_ggplot <- ggplot(summary_df %>% dplyr::filter(country == "Canada"), aes(year, family)) +
+  geom_line()
+
+intiliaztion_plotly <- ggplotly(intiliaztion_ggplot)
 
 #************************************** Layout building************************************
 
@@ -36,8 +41,8 @@ sidebar <- dbcCol(
     htmlHr(),
     dbcChecklist(
       id = "feature-select-1",
-      options = purrr::map(feature_dict %>% colnames, function(col) list(label = col, value = feature_dict[[col]])),
-      value =  feature_dict %>% slice(1) %>% unlist(., use.names=FALSE)
+      options = purrr::map(feature_dict %>% colnames(), function(col) list(label = col, value = feature_dict[[col]])),
+      value = feature_dict %>% slice(1) %>% unlist(., use.names = FALSE)
     ),
     htmlHr(),
     htmlH3("Year Range", className = "display-6"),
@@ -70,11 +75,17 @@ sidebar <- dbcCol(
 )
 
 content <- dbcCol(
-  list(dccLoading(
-    list(dccGraph(id = "happiness-over-time", style = list("height" = "30vh"))
-      #dccGraph(id = "features-over-time", style = list("height" = "70vh"))
-    ),type = "cube",
-  )),
+  children =
+    list(dccLoading(
+      children =
+        list(
+          dccGraph(id = "happiness-over-time", 
+                   figure = intiliaztion_plotly, 
+                   style = list("height" = "30vh")
+                   )
+          # dccGraph(id = "features-over-time", style = list("height" = "70vh"))
+        ), type = "cube"
+    )),
   md = 9,
 )
 
@@ -89,26 +100,29 @@ app$layout(
   )
 )
 
-#*******************************************Callback definition***************************
+#******************************************* Callback definition***************************
 
-filter_df <- function(summary_df,country_list,feat_list,year_range) {
+filter_df <- function(summary_df, country_list, feat_list, year_range) {
   ret_df <- summary_df %>%
-    filter(country %in% country_list)
+    dplyr::filter(country %in% country_list)
 }
 
 
-#output("features-over-time", "figure")
+# output("features-over-time", "figure")
 app$callback(
-  list(output("happiness-over-time", "figure")),
-  list(input("country-select-1", "value"),input("feature-select-1", "value"),input("year-select-1", "value")),
-  function(country_list,feat_list,year_range) {
-    happiness_plot <- ggplot(summary_df %>% filter(country=="Canada"),aes(year,family)) +
+  output = list(output("happiness-over-time", "figure")),
+  params = list(input("country-select-1", "value"), input("feature-select-1", "value"), input("year-select-1", "value")),
+  function(country_list, feat_list, year_range) {
+    happiness_plot <- summary_df %>%
+      dplyr::filter(country %in% country_list) %>%
+      ggplot(aes(year, family)) +
       geom_line()
-    
-    #features_plot <- ggplot(summary_df,aes(year,family)) +
+
+    # features_plot <- ggplot(summary_df,aes(year,family)) +
     #  geom_line()
-    #fig_list <- list(happiness_plot,features_plot)
-    return (ggplotly(happiness_plot))
+    # fig_list <- list(happiness_plot,features_plot)
+    plot_out <- ggplotly(happiness_plot) %>% layout(dragmode = 'select')
+    return(plot_out)
   }
 )
 
