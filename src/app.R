@@ -26,11 +26,6 @@ feature_dict <- tibble(
 year_range <- summary_df$year %>% unique()
 year_range <- setNames(as.list(as.character(year_range)), as.integer(year_range))
 
-intiliaztion_ggplot <- ggplot(summary_df %>% dplyr::filter(country == "Canada"), aes(year, family)) +
-  geom_line()
-
-intiliaztion_plotly <- ggplotly(intiliaztion_ggplot)
-
 #************************************** Layout building************************************
 
 sidebar <- dbcCol(
@@ -80,7 +75,6 @@ content <- dbcCol(
       children =
         list(
           dccGraph(id = "happiness-over-time", 
-                   figure = intiliaztion_plotly, 
                    style = list("height" = "30vh")
                    ), 
           dccGraph(id = "features-over-time", style = list("height" = "70vh"))
@@ -96,7 +90,7 @@ app$layout(
       className = "h-100"
     )),
     fluid = TRUE,
-    style = list("height" = "100vh")
+    style = list("height" = "100vh", "width"="80%")
   )
 )
 
@@ -131,7 +125,8 @@ app$callback(
       country_list = list("Canada")
     }
     
-    filtered_df <- filter_df(summary_df = summary_df,country_list = country_list,feat_list = feat_list,year_range = year_range)
+    filtered_df <- filter_df(summary_df = summary_df,country_list = country_list,feat_list = feat_list,year_range = year_range) %>% 
+      mutate(year = lubridate::as_date(paste(year,1,1,sep='-')))
     
     happiness_plot <- filtered_df %>%
       ggplot(aes(year, happiness_score,color=country)) +
@@ -140,18 +135,19 @@ app$callback(
       ggtitle("Happiness Score Over Time by Country")
     
    
-    features_plot <- filtered_df %>% select(-c("happiness_score")) %>%
-      pivot_longer(as.character(feat_list)) %>%
-      ggplot(aes(x=year,y=value,color=country)) +
-      geom_line() + 
-      geom_point() +
-      facet_wrap(~name,ncol = 2,scales='free_y') + 
-      ggtitle('Impact Of Features Over Time On Happiness Score') 
-      
-      
+  features_plot <- filtered_df %>%
+    select(-c("happiness_score")) %>%
+    pivot_longer(as.character(feat_list)) %>%
+    left_join(feature_dict %>% 
+                pivot_longer(everything(), names_to = "feature_label", values_to = "feature"),
+              by = c("name" = "feature")) %>%
+    ggplot(aes(x = year, y = value, color = country)) +
+    geom_line() +
+    geom_point() +
+    facet_wrap(~feature_label, ncol = 2, scales = "free_y") +
+    ggtitle("Impact Of Features Over Time On Happiness Score")
+        
     
-    print(features_plot)
-    # fig_list <- list(happiness_plot,features_plot)
     plot_out <- ggplotly(happiness_plot) %>% layout(dragmode = 'select')
     plot_out2 <- ggplotly(features_plot) %>% layout(dragmode = 'select')
     return(list(plot_out,plot_out2)) 
