@@ -82,8 +82,8 @@ content <- dbcCol(
           dccGraph(id = "happiness-over-time", 
                    figure = intiliaztion_plotly, 
                    style = list("height" = "30vh")
-                   )
-          # dccGraph(id = "features-over-time", style = list("height" = "70vh"))
+                   ), 
+          dccGraph(id = "features-over-time", style = list("height" = "70vh"))
         ), type = "cube"
     )),
   md = 9,
@@ -103,26 +103,58 @@ app$layout(
 #******************************************* Callback definition***************************
 
 filter_df <- function(summary_df, country_list, feat_list, year_range) {
+  years = seq.int(year_range[[1]],year_range[[2]])
   ret_df <- summary_df %>%
-    dplyr::filter(country %in% country_list)
+    filter(country %in% country_list) %>%
+    filter(year %in% years)  
+  
+  add_to_feat <- c("country", "happiness_score", "year")
+  feat_list <- c(feat_list,add_to_feat)
+  ret_df <- ret_df[,as.character(feat_list)]
+  return(ret_df)
 }
 
 
-# output("features-over-time", "figure")
+
 app$callback(
-  output = list(output("happiness-over-time", "figure")),
+  output = list(output("happiness-over-time", "figure"),output("features-over-time", "figure")),
   params = list(input("country-select-1", "value"), input("feature-select-1", "value"), input("year-select-1", "value")),
   function(country_list, feat_list, year_range) {
-    happiness_plot <- summary_df %>%
-      dplyr::filter(country %in% country_list) %>%
-      ggplot(aes(year, family)) +
-      geom_line()
-
-    # features_plot <- ggplot(summary_df,aes(year,family)) +
-    #  geom_line()
+    
+    all_feats = as.character(feature_dict %>% slice(1))
+    
+    if (length(feat_list)==0) {
+      feat_list = all_feats
+    }
+    
+    if (length(country_list)==0) {
+      country_list = list("Canada")
+    }
+    
+    filtered_df <- filter_df(summary_df = summary_df,country_list = country_list,feat_list = feat_list,year_range = year_range)
+    
+    happiness_plot <- filtered_df %>%
+      ggplot(aes(year, happiness_score,color=country)) +
+      geom_line() +
+      geom_point() +
+      ggtitle("Happiness Score Over Time by Country")
+    
+   
+    features_plot <- filtered_df %>% select(-c("happiness_score")) %>%
+      pivot_longer(as.character(feat_list)) %>%
+      ggplot(aes(x=year,y=value,color=country)) +
+      geom_line() + 
+      geom_point() +
+      facet_wrap(~name,ncol = 2,scales='free_y') + 
+      ggtitle('Impact Of Features Over Time On Happiness Score') 
+      
+      
+    
+    print(features_plot)
     # fig_list <- list(happiness_plot,features_plot)
     plot_out <- ggplotly(happiness_plot) %>% layout(dragmode = 'select')
-    return(list(plot_out))
+    plot_out2 <- ggplotly(features_plot) %>% layout(dragmode = 'select')
+    return(list(plot_out,plot_out2)) 
   }
 )
 
