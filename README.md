@@ -29,18 +29,17 @@ In the overview, in the menu the user can select all or a certain number of feat
 To run this app locally and modify it - first clone this repo:
 
 ```bash
-$ git clone https://github.com/UBC-MDS/happy-dash.git
+$ git clone https://github.com/UBC-MDS/happy-dash-r.git
 ```
 
-Setup a conda env for it, and activate it using the following commands from the root of the project on your computer:
+Install the required packages using the following commands from the console of RStudio on your computer:
 
 ```bash
-$ conda env create
-$ conda activate happydash
+install.packages(c('dash', 'readr', 'here', 'ggthemes', 'remotes', 'tidyverse', 'devtools'))
 ```
 
 Finally, run the app with:
 
 ```bash
-$ python src/app.py
+$ Rscript app.R
 ```
