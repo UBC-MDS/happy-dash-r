@@ -1,7 +1,12 @@
-# happy-dash
-An interactive exploration of the World Happiness Report
+# happy-dash-r
 
-Heroku app [here](https://happydash.herokuapp.com/).
+An interactive exploration of the World Happiness Report in R.
+
+Heroku app [here](https://happy-r-dash.herokuapp.com/).
+
+Demo:
+
+![](happy-dash-r.gif)
 
 ### Description of Dashboard Design
 This dashboard is to compare happiness across multiple countries.
