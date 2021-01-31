@@ -4,6 +4,10 @@ An interactive exploration of the World Happiness Report in R.
 
 Heroku app [here](https://happy-r-dash.herokuapp.com/).
 
+Demo:
+
+![](happy-dash-r.gif)
+
 ### Description of Dashboard Design
 This dashboard is to compare happiness across multiple countries.
 The dashboard will be divided into two main screens: an overview and a detailed view.
